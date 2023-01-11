@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Headhunting Calculator</title>
+  <link href="style.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+  <div id="container"></div>
+  <script src="script.js"></script>
+  <script>
+    const Slider = function ({min = 0, max = 100, step = 1, def = 0}, callback) {
+      const slider = document.createElement("input");
+      const sliderDisplay = document.createElement("input");
+
+      Object.assign(slider, {min, max, step});
+      slider.type = "range";
+      slider.value = def;
+      sliderDisplay.type = "number";
+      sliderDisplay.value = def;
+
+      slider.addEventListener("input", (ev) => {
+        const value = ev.target.value;
+        sliderDisplay.value = value;
+        callback(value);
+      });
+
+      sliderDisplay.addEventListener("input", (ev) => {
+        const value = ev.target.value;
+        slider.value = value;
+        callback(value);
+      });
+
+      return [sliderDisplay, slider];
+    };
+
+    const sections = {
+      "pity": {
+        "label": "How much pity do you have?",
+        "slider": {
+          "max": 99
+        }
+      },
+      "rolls": {
+        "label": "How many rolls are you doing?",
+        "slider": {
+          "max": 200,
+          "def": 50
+        }
+      },
+      "chance": {
+        "label": "What is the chance of your desired 6*(s)?",
+        "slider": {
+          "max": 1,
+          "step": 0.01,
+        }
+      }
+    };
+
+    const container = document.getElementById("container");
+    const initialValues = {};
+    const values = new Proxy(initialValues, {
+      set(target, prop, value) {
+        target[prop] = value;
+        callback();
+      }
+    });
+
+    for (const sectionName in sections) {
+      const config = sections[sectionName];
+
+      const section = document.createElement("section");
+      section.id = "section-" + sectionName;
+
+      const p = document.createElement("p");
+      p.textContent = config.label;
+
+      function sliderCallback(value) {
+        values[sectionName] = +value;
+      }
+
+      section.append(p, ...Slider(config.slider, sliderCallback));
+      container.append(section);
+
+      initialValues[sectionName] = config.slider.def || 0;
+    }
+
+    function hsl(hue) {
+      return `hsl(${~~hue}, 100%, 30%)`;
+    }
+
+    const section = document.createElement("section");
+    section.id = "section-final";
+
+    const p = document.createElement("p");
+    p.id = "display";
+    p.textContent = "0.00%";
+    p.style.color = hsl(0);
+
+    section.append(p);
+    container.append(section);
+
+    function callback() {
+      const result = calculateProbability(values);
+      if (result !== null) {
+        let str = (result * 100).toFixed(2);
+        let i = 2;
+        while (/(.)\1.$/.test(str.replace(".", ""))) {
+          if (i > 8) {
+            str = Math.round(result * 100).toFixed(2);
+            break;
+          }
+          str = (result * 100).toFixed(++i);
+        }
+        p.textContent = str + '%';
+        p.style.color = hsl(120 * result);
+      }
+    }
+  </script>
+</body>
+
+</html>
